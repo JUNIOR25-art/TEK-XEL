@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tek Xel– Ku am xel moo am ndam</title>
+    <link rel="preload" as="style" href="styles.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Page d'accueil -->
+    <div id="welcome-screen" class="welcome-screen">
+      <div class="welcome-content">
+        <div class="welcome-flag">
+          <div class="stripe green"></div>
+          <div class="stripe yellow">
+            <svg class="star" viewBox="0 0 100 100" aria-hidden="true">
+              <polygon points="50,10 61,38 91,38 66,56 75,85 50,68 25,85 34,56 9,38 39,38" fill="#00853F" />
+            </svg>
+          </div>
+          <div class="stripe red"></div>
+        </div>
+        <h1 class="welcome-title">Tek Xel</h1>
+        <h2 class="welcome-subtitle">Édition Dames Sénégalaises</h2>
+        <p class="welcome-message">Jëkkal ci ay xarit, ñu def ci ay xarit!</p>
+        <p class="welcome-translation">Bienvenue entre amis, jouons entre amis!</p>
+        <button id="start-game-btn" class="start-button">Démarrer la partie</button>
+      </div>
+    </div>
+
+    <!-- Jeu principal -->
+    <div id="game-screen" class="app" style="display: none;">
+      <header class="app-header">
+        <div class="flag-sn" aria-label="Drapeau du Sénégal">
+          <div class="stripe green"></div>
+          <div class="stripe yellow">
+            <svg class="star" viewBox="0 0 100 100" aria-hidden="true">
+              <polygon points="50,10 61,38 91,38 66,56 75,85 50,68 25,85 34,56 9,38 39,38" fill="#00853F" />
+            </svg>
+          </div>
+          <div class="stripe red"></div>
+        </div>
+        <h1 class="title">Tek Xel – Ku am xel moo am ndam</h1>
+      </header>
+
+      <main class="main">
+        <section class="status" id="status" role="status" aria-live="polite" aria-atomic="true">
+          Phase de Placement ( Athia bal bà tak na) : C'est le tour de Jàngalek
+        </section>
+
+        <section class="score-board" aria-label="Tableau des scores">
+          <div id="score-x" class="score">X: <span id="scoreXValue">0</span></div>
+          <div class="separator" aria-hidden="true"></div>
+          <div id="score-tie" class="score">Égalité: <span id="scoreTieValue">0</span></div>
+          <div class="separator" aria-hidden="true"></div>
+          <div id="score-o" class="score">O: <span id="scoreOValue">0</span></div>
+        </section>
+
+        <section class="controls" aria-label="Contrôles du jeu">
+          <div class="mode-selector">
+            <label for="mode" class="sr-only">Mode de jeu</label>
+            <select id="mode" name="mode" aria-label="Sélection du mode de jeu">
+              <option value="pvp">Joueur vs Joueur</option>
+            </select>
+          </div>
+
+          <div class="tokens" id="tokensStatus" aria-live="polite">
+            Jetons Jàngalek restants: <span id="tokensX">3</span> | Jetons Xeexkat restants: <span id="tokensO">3</span>
+          </div>
+
+          <div class="buttons">
+            <button id="resetBtn" class="reset-button" aria-label="Réinitialiser la partie">Réinitialiser</button>
+            <button id="themeToggle" class="theme-toggle" aria-label="Basculer le thème">Thème</button>
+          </div>
+        </section>
+
+        <section class="board" id="board" role="grid" aria-label="Tableau de Morpion 3-pions">
+          <button class="cell" role="gridcell" data-index="0" aria-label="Case 1"></button>
+          <button class="cell" role="gridcell" data-index="1" aria-label="Case 2"></button>
+          <button class="cell" role="gridcell" data-index="2" aria-label="Case 3"></button>
+          <button class="cell" role="gridcell" data-index="3" aria-label="Case 4"></button>
+          <button class="cell" role="gridcell" data-index="4" aria-label="Case 5"></button>
+          <button class="cell" role="gridcell" data-index="5" aria-label="Case 6"></button>
+          <button class="cell" role="gridcell" data-index="6" aria-label="Case 7"></button>
+          <button class="cell" role="gridcell" data-index="7" aria-label="Case 8"></button>
+          <button class="cell" role="gridcell" data-index="8" aria-label="Case 9"></button>
+        </section>
+
+        <section class="audio-player">
+          <div class="music-controls" aria-label="Musique de fond">
+            <button id="musicToggle" class="music-btn" aria-label="Lire ou mettre en pause la musique">▶️/⏸</button>
+            <button id="musicNext" class="music-btn" aria-label="Piste suivante">⏭</button>
+            <span id="trackLabel" class="track-label" aria-live="polite"></span>
+          </div>
+          <audio id="bgMusic" preload="metadata">
+            <source src="assets/sounds/Youssou_Ndour_-_Mbeug_l_Is_All_Version_Mbalax_Ch_rie_Coco_Ch_rie_Coco_(mp3.pm).mp3" type="audio/mpeg" />
+            <source src="assets/sounds/Neneh_Cherry_and_Youssou_NDour_-_Seven_Second_(mp3.pm).mp3" type="audio/mpeg" />
+            <source src="assets/sounds/Youssou_N_Dour_Le_Super_toile_De_Dakar_-_New_Africa_(mp3.pm).mp3" type="audio/mpeg" />
+            <source src="assets/sounds/Youssou_NDour_Le_Super_Etoile_-_Xarit_(mp3.pm).mp3" type="audio/mpeg" />
+          </audio>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <small>Conçu avec un esprit de jeu et les couleurs du Sénégal.</small>
+      </footer>
+    </div>
+
+    <script defer src="script.js"></script>
+  </body>
+  </html>
+
+
