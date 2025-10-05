@@ -381,93 +381,44 @@
 
     // Music playlist with crossfade and label
     // Build from HTML <audio> sources if present, else fallback to defaults
-    let playlist = [];
-    if (musicEl && musicEl.querySelectorAll('source').length) {
-      playlist = Array.from(musicEl.querySelectorAll('source')).map((s, i) => ({
-        title: s.getAttribute('data-title') || `Piste ${i + 1}`,
-        src: s.getAttribute('src')
-      }));
-    } else {
-      playlist = [
-        { title: 'Ambiance Dakar 1', src: 'assets/sounds/musique_africaine.mp3' },
-        { title: 'Ambiance Dakar 2', src: 'assets/sounds/musique_africaine_2.mp3' },
-        { title: 'Ambiance Dakar 3', src: 'assets/sounds/musique_africaine_3.mp3' }
-      ];
-    }
-    let trackIndex = 0;
-    let audioA = musicEl;
-    let audioB = new Audio();
-    let usingA = true;
-    let isPlaying = false;
-    audioA.loop = false; audioB.loop = false;
-    audioA.volume = 0; audioB.volume = 0;
-
-    function setTrack(el, track) {
-      el.src = track.src;
-      el.preload = 'metadata';
-      console.log('Loading track:', track.title, 'from:', track.src);
-    }
-    function labelTrack() {
-      if (trackLabel) trackLabel.textContent = `Piste: ${playlist[trackIndex].title}`;
-    }
-    function playCurrent() {
-      const active = usingA ? audioA : audioB;
-      active.currentTime = 0;
-      active.volume = 0;
-      console.log('Attempting to play:', active.src);
-      active.play().then(() => {
-        console.log('Audio started successfully');
-        isPlaying = true;
-        labelTrack();
-        const start = performance.now();
-        function fadeIn(ts) {
-          const t = Math.min(1, (ts - start) / 800);
-          active.volume = 0.4 * t;
-          if (t < 1) requestAnimationFrame(fadeIn);
-        }
-        requestAnimationFrame(fadeIn);
-      }).catch((error) => {
-        console.error('Audio play failed:', error);
-      });
-    }
-    function crossfadeToNext() {
-      const from = usingA ? audioA : audioB;
-      usingA = !usingA;
-      const to = usingA ? audioA : audioB;
-      trackIndex = (trackIndex + 1) % playlist.length;
-      setTrack(to, playlist[trackIndex]);
-      labelTrack();
-      to.currentTime = 0;
-      to.volume = 0;
-      to.play().catch(() => {});
-      const start = performance.now();
-      function step(ts) {
-        const t = Math.min(1, (ts - start) / 1000);
-        to.volume = 0.4 * t;
-        from.volume = 0.4 * (1 - t);
-        if (t < 1) requestAnimationFrame(step); else from.pause();
-      }
-      requestAnimationFrame(step);
-    }
-    function primeFirstTrack() {
-      setTrack(audioA, playlist[trackIndex]);
-      labelTrack();
-    }
-    primeFirstTrack();
-    audioA.addEventListener('ended', () => { if (isPlaying) crossfadeToNext(); });
-    audioB.addEventListener('ended', () => { if (isPlaying) crossfadeToNext(); });
-    if (musicToggleBtn) musicToggleBtn.addEventListener('click', () => {
-      if (!isPlaying) {
-        playCurrent();
+   
+    const audio = document.getElementById('bgMusic');
+    const toggleBtn = document.getElementById('musicToggle');
+    const nextBtn = document.getElementById('musicNext');
+    const trackLabel = document.getElementById('trackLabel');
+  
+    const tracks = [
+      'assets/sounds/Youssou_Ndour_-_Mbeug_l_Is_All_Version_Mbalax_Ch_rie_Coco_Ch_rie_Coco_(mp3.pm).mp3',
+      'assets/sounds/Neneh_Cherry_and_Youssou_NDour_-_Seven_Second_(mp3.pm).mp3',
+      'assets/sounds/Youssou_N_Dour_Le_Super_toile_De_Dakar_-_New_Africa_(mp3.pm).mp3',
+      'assets/sounds/Youssou_NDour_Le_Super_Etoile_-_Xarit_(mp3.pm).mp3'
+    ];
+  
+    let currentTrack = 0;
+    audio.src = tracks[currentTrack];
+  
+    toggleBtn.addEventListener('click', () => {
+      if (audio.paused) {
+        audio.play().then(() => {
+          toggleBtn.textContent = '⏸';
+          trackLabel.textContent = `Lecture : ${tracks[currentTrack].split('/').pop()}`;
+        }).catch(err => {
+          console.log('Lecture bloquée :', err);
+        });
       } else {
-        audioA.pause(); audioB.pause(); isPlaying = false;
+        audio.pause();
+        toggleBtn.textContent = '▶️';
       }
     });
-    if (musicNextBtn) musicNextBtn.addEventListener('click', () => {
-      if (!isPlaying) { playCurrent(); return; }
-      crossfadeToNext();
+  
+    nextBtn.addEventListener('click', () => {
+      currentTrack = (currentTrack + 1) % tracks.length;
+      audio.src = tracks[currentTrack];
+      audio.play();
+      trackLabel.textContent = `Lecture : ${tracks[currentTrack].split('/').pop()}`;
     });
-
+  
+  
     // Force start music immediately on page load
     setTimeout(() => {
       if (!isPlaying) {
