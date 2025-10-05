@@ -89,26 +89,76 @@
       
         <section class="audio-player">
           <div class="music-controls" aria-label="Musique de fond">
-            <button id="musicToggle" class="music-btn" aria-label="Lire ou mettre en pause la musique">▶️/⏸</button>
+            <button id="musicToggle" class="music-btn" aria-label="Lire ou mettre en pause la musique">▶️</button>
             <button id="musicNext" class="music-btn" aria-label="Piste suivante">⏭</button>
             <span id="trackLabel" class="track-label" aria-live="polite"></span>
           </div>
-          <audio id="bgMusic" preload="metadata">
-            <source src="assets/sounds/Youssou_Ndour_-_Mbeug_l_Is_All_Version_Mbalax_Ch_rie_Coco_Ch_rie_Coco_(mp3.pm).mp3" type="audio/mpeg" />
-            <source src="assets/sounds/Neneh_Cherry_and_Youssou_NDour_-_Seven_Second_(mp3.pm).mp3" type="audio/mpeg" />
-            <source src="assets/sounds/Youssou_N_Dour_Le_Super_toile_De_Dakar_-_New_Africa_(mp3.pm).mp3" type="audio/mpeg" />
-            <source src="assets/sounds/Youssou_NDour_Le_Super_Etoile_-_Xarit_(mp3.pm).mp3" type="audio/mpeg" />
-          </audio>
+          <!-- Une seule balise audio, sans <source> -->
+          <audio id="bgMusic" preload="none" playsinline></audio>
+
         </section>
+        <script>
+          const audio = document.getElementById('bgMusic');
+          const toggleBtn = document.getElementById('musicToggle');
+          const nextBtn = document.getElementById('musicNext');
+          const trackLabel = document.getElementById('trackLabel');
+        
+          const tracks = [
+            "assets/sounds/Youssou_Ndour_-_Mbeug_l_Is_All_Version_Mbalax_Ch_rie_Coco_Ch_rie_Coco_(mp3.pm).mp3",
+            "assets/sounds/Neneh_Cherry_and_Youssou_NDour_-_Seven_Second_(mp3.pm).mp3",
+            "assets/sounds/Youssou_N_Dour_Le_Super_toile_De_Dakar_-_New_Africa_(mp3.pm).mp3",
+            "assets/sounds/Youssou_NDour_Le_Super_Etoile_-_Xarit_(mp3.pm).mp3"
+          ];
+        
+          let currentTrack = 0;
+          audio.src = tracks[currentTrack];
+        
+          function playMusic() {
+            audio.play().then(() => {
+              toggleBtn.textContent = '⏸';
+              trackLabel.textContent = `Lecture : ${tracks[currentTrack].split('/').pop()}`;
+            }).catch(err => {
+              console.warn("Lecture bloquée par le navigateur :", err);
+              trackLabel.textContent = "Touchez à nouveau ▶️ pour lancer la musique 🎵";
+            });
+          }
+        
+          toggleBtn.addEventListener('click', () => {
+            if (audio.paused) {
+              playMusic();
+            } else {
+              audio.pause();
+              toggleBtn.textContent = '▶️';
+            }
+          });
+        
+          nextBtn.addEventListener('click', () => {
+            currentTrack = (currentTrack + 1) % tracks.length;
+            audio.src = tracks[currentTrack];
+            playMusic();
+          });
+        
+          // Compatibilité iOS : active aussi sur 'touchstart'
+          ['click', 'touchstart'].forEach(evt => {
+            toggleBtn.addEventListener(evt, () => {}, {passive: true});
+            nextBtn.addEventListener(evt, () => {}, {passive: true});
+          });
+        </script>
+                
       </main>
       <footer class="app-footer">
-        <p>Créé par Birane LY</p>
+        <p>Créé par <strong>BIRANE LY</strong></p>
         <div class="creator-links">
-            <a href="mailto:biranely94@gmail.com">Email</a>
-            |
-            <a href="https://www.linkedin.com/in/birane-ly/" target="_blank">LinkedIn</a>
+          <a href="mailto:biranely94@gmail.com" class="footer-link">
+            📧 Email
+          </a>
+          <span class="separator">•</span>
+          <a href="https://www.linkedin.com/in/birane-ly/" target="_blank" class="footer-link">
+            🔗 LinkedIn
+          </a>
         </div>
-    </footer>
+      </footer>
+      
       <footer class="footer">
         <small>Conçu avec un esprit de jeu et les couleurs du Sénégal.</small>
       </footer>

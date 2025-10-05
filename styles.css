@@ -418,4 +418,33 @@ body {
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 
+.app-footer {
+  text-align: center;
+  padding: 1rem 0;
+  background: var(--background-footer, #111);
+  color: var(--text-footer, #f0f0f0);
+  font-size: 0.9rem;
+}
+
+.creator-links {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.3rem;
+}
+
+.footer-link {
+  color: #fdd835; /* jaune Sénégal */
+  text-decoration: none;
+  transition: color 0.3s, transform 0.2s;
+}
+
+.footer-link:hover {
+  color: #1ba548; /* vert Sénégal */
+  transform: scale(1.05);
+}
+
+.separator {
+  color: #888;
+}
 
