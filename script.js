@@ -34,7 +34,21 @@
   /**
    * DOM
    */
+
   const welcomeScreen = document.getElementById('welcome-screen');
+  document.getElementById('start-game-btn').addEventListener('click', () => {
+    // Appel de la fonction globale playMusic définie dans index.html
+    if (window.playMusic) {
+      window.playMusic(); 
+    }
+    
+    // Le reste de la logique de démarrage du jeu...
+    welcomeScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+    
+    startGame();
+  });
+  
   const gameScreen = document.getElementById('game-screen');
   const startGameBtn = document.getElementById('start-game-btn');
   const boardEl = document.getElementById('board');

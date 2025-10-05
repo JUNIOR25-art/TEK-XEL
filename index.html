@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    
     <!-- Page d'accueil -->
     <div id="welcome-screen" class="welcome-screen">
       <div class="welcome-content">
@@ -27,6 +28,19 @@
         <button id="start-game-btn" class="start-button">Démarrer la partie</button>
       </div>
     </div>
+    <script>
+      // ... (autres variables et définitions)
+      
+      // Rendre playMusic globale pour l'appeler depuis script.js
+      window.playMusic = function() { // <-- Changement ici
+          audio.play().catch(error => {
+              console.log('La lecture automatique a été bloquée. Veuillez interagir avec la page.', error);
+              toggleBtn.textContent = '▶️';
+          });
+      }
+  
+      // ... (le reste du code)
+  </script>
 
     <!-- Jeu principal -->
     <div id="game-screen" class="app" style="display: none;">
