@@ -36,16 +36,26 @@
    */
 
   const welcomeScreen = document.getElementById('welcome-screen');
-  document.getElementById('start-game-btn').addEventListener('click', () => {
-    // Appel de la fonction globale playMusic définie dans index.html
-    if (window.playMusic) {
-      window.playMusic(); 
-    }
-    
+  
+  // NOUVELLE FONCTION: Encapsuler la logique de démarrage du jeu.
+  function startGame() {
     // Le reste de la logique de démarrage du jeu...
     welcomeScreen.classList.remove('active');
     gameScreen.classList.add('active');
     
+    // On appelle la fonction de transition
+    showGame();
+  }
+  
+  // MODIFICATION: Lancement de la musique via window.playMusic() sur l'interaction utilisateur
+  document.getElementById('start-game-btn').addEventListener('click', () => {
+    // Appel de la fonction globale playMusic définie dans index.html
+    // C'est l'action qui permet de contourner le "shadow-ban" en jouant sur l'interaction.
+    if (window.playMusic) {
+      window.playMusic(); 
+    }
+    
+    // Démarrer la logique du jeu après la musique
     startGame();
   });
   
@@ -87,10 +97,10 @@
     return board.every(Boolean);
   }
 
-  function getWinner() {
+  function getWinner(currentBoard = board) {
     for (const [a, b, c] of winningCombos) {
-      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-        return { player: board[a], line: [a, b, c] };
+      if (currentBoard[a] && currentBoard[a] === currentBoard[b] && currentBoard[a] === currentBoard[c]) {
+        return { player: currentBoard[a], line: [a, b, c] };
       }
     }
     return null;
@@ -125,6 +135,10 @@
     } else if (phase === 'movement') {
       updateStatus(`Phase de Déplacement : Joueur ${currentPlayer}, sélectionnez un jeton`, currentPlayer === 'X' ? 'player-x' : 'player-o');
     }
+    // Si c'est le tour de l'IA, on lance son mouvement après l'annonce
+    if (gameMode !== 'pvp' && currentPlayer === aiPlayer && phase !== 'ended') {
+      makeAIMove();
+    }
   }
 
   function renderBoard() {
@@ -157,6 +171,7 @@
     const row = Math.floor(i / 3);
     const col = i % 3;
     const result = [];
+    // Parcours les 8 voisins (y compris les diagonales)
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
         if (dr === 0 && dc === 0) continue;
@@ -172,7 +187,7 @@
 
   function canMove(from, to) {
     if (!board[from] || board[to]) return false;
-    // Allow adjacent moves (including diagonals) for smooth play
+    // Permettre les mouvements adjacents (y compris les diagonales)
     return getAdjacentIndices(from).includes(to);
   }
 
@@ -206,7 +221,7 @@
       const anim = ghost.animate([
         { transform: 'translate3d(0,0,0) rotateX(0deg) rotateY(0deg) scale(1)', filter: 'brightness(1)' },
         { transform: `translate3d(${deltaX * 0.5}px, ${deltaY * 0.5}px, 20px) rotateX(5deg) rotateY(-5deg) scale(1.03)`, filter: 'brightness(1.02)' },
-        { transform: `translate3d(${deltaX}px, ${deltaY}px, 0px) rotateX(0deg) rotateY(0deg) scale(1)`, filter: 'brightness(1)' }
+        { transform: `translate3d(${deltaX}px, ${deltaY}px, 0px) rotateX(0deg) rotateY(0deg) scale(1)', filter: 'brightness(1)' }
       ], {
         duration: 250,
         easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
@@ -248,7 +263,7 @@
     if (winner) {
       scores[winner] += 1;
       (winner === 'X' ? scoreXEl : scoreOEl).textContent = String(scores[winner]);
-      updateStatus(`Victoire du joueur Jàngalek{winner}! 🎉 (Ndanane bi amna ndam)`, 'victory');
+      updateStatus(`Victoire du joueur ${winner}! 🎉 (Ndanane bi amna ndam)`, 'victory');
       try { winSound && winSound.play().catch(() => {}); } catch {}
     } else {
       scores.tie += 1;
@@ -268,10 +283,13 @@
       endRound(result.player);
       return true;
     }
+    // Changement de phase du placement au mouvement
     if (postMove && phase === 'placement' && tokensPlaced.X === tokensMax && tokensPlaced.O === tokensMax) {
       phase = 'movement';
       announceState();
+      return false; // Le jeu n'est pas terminé
     }
+    // Match nul si plateau plein en phase de mouvement (bien que ce soit moins fréquent dans ce jeu)
     if (phase !== 'placement' && phase !== 'movement' && isBoardFull()) {
       endRound(null);
       return true;
@@ -282,6 +300,8 @@
   function handleCellClick(e) {
     const index = Number(e.currentTarget.getAttribute('data-index'));
     if (phase === 'ended') return;
+    // Empêcher le joueur humain de cliquer si c'est le tour de l'IA
+    if (gameMode !== 'pvp' && currentPlayer === aiPlayer) return;
 
     if (phase === 'placement') {
       if (placePiece(index)) {
@@ -351,6 +371,8 @@
       scoreOEl.textContent = '0';
       scoreTieEl.textContent = '0';
     }
+    // Récupérer le mode de jeu actuel
+    gameMode = modeSelect.value;
     updateTokensUI();
     updateActiveScoreIndicator();
     announceState();
@@ -370,6 +392,11 @@
       case 'ArrowLeft': target = idx - 1; break;
       case 'ArrowRight': target = idx + 1; break;
       case 'Escape': selectedIndex = null; renderBoard(); announceState(); return;
+      case 'Enter':
+      case ' ':
+        // Simuler un clic
+        handleCellClick({ currentTarget: cells[idx] });
+        return;
       default: return;
     }
     if (target != null && target >= 0 && target < 9) {
@@ -390,7 +417,8 @@
       root.setAttribute('data-theme', isLight ? 'dark' : 'light');
     });
     modeSelect.addEventListener('change', () => {
-      // Placeholder for future AI integration; keep PvP for now
+      gameMode = modeSelect.value;
+      resetGame(false); // Réinitialiser le jeu si le mode change
     });
 
     // Music playlist with crossfade and label
@@ -409,13 +437,18 @@
     ];
   
     let currentTrack = 0;
-    audio.src = tracks[currentTrack];
-  
+    
+    // Initialisation de la source audio (si elle n'est pas déjà définie)
+    if (!audio.src || audio.src === window.location.href) {
+        audio.src = tracks[currentTrack];
+        trackLabel.textContent = `Piste : ${tracks[currentTrack].split('/').pop().replace(/_/g, ' ').replace(/\(mp3\.pm\)\.mp3/i, '')}`;
+    }
+
     toggleBtn.addEventListener('click', () => {
       if (audio.paused) {
         audio.play().then(() => {
           toggleBtn.textContent = '⏸';
-          trackLabel.textContent = `Lecture : ${tracks[currentTrack].split('/').pop()}`;
+          trackLabel.textContent = `Lecture : ${tracks[currentTrack].split('/').pop().replace(/_/g, ' ').replace(/\(mp3\.pm\)\.mp3/i, '')}`;
         }).catch(err => {
           console.log('Lecture bloquée :', err);
         });
@@ -428,51 +461,15 @@
     nextBtn.addEventListener('click', () => {
       currentTrack = (currentTrack + 1) % tracks.length;
       audio.src = tracks[currentTrack];
-      audio.play();
-      trackLabel.textContent = `Lecture : ${tracks[currentTrack].split('/').pop()}`;
+      // Pour s'assurer que le bouton Play est mis à jour si on change de piste sans jouer
+      if (!audio.paused) {
+        audio.play();
+      }
+      trackLabel.textContent = `Lecture : ${tracks[currentTrack].split('/').pop().replace(/_/g, ' ').replace(/\(mp3\.pm\)\.mp3/i, '')}`;
     });
-  
-  
-    // Force start music immediately on page load
-    setTimeout(() => {
-      if (!isPlaying) {
-        playCurrent();
-      }
-    }, 1000);
-
-    // Attempt muted autoplay and lift volume on first interaction
-    (function setupAutoplay() {
-      const active = usingA ? audioA : audioB;
-      try {
-        active.volume = 0;
-        active.play().then(() => { isPlaying = true; labelTrack(); }).catch(() => {});
-      } catch {}
-
-      function onFirstInteraction() {
-        if (!isPlaying) {
-          playCurrent();
-        } else {
-          const start = performance.now();
-          function fadeUp(ts) {
-            const t = Math.min(1, (ts - start) / 800);
-            (usingA ? audioA : audioB).volume = 0.4 * t;
-            if (t < 1) requestAnimationFrame(fadeUp);
-          }
-          requestAnimationFrame(fadeUp);
-        }
-        window.removeEventListener('pointerdown', onFirstInteraction);
-        window.removeEventListener('keydown', onFirstInteraction);
-        window.removeEventListener('touchstart', onFirstInteraction, { passive: true });
-      }
-      window.addEventListener('pointerdown', onFirstInteraction, { once: true });
-      window.addEventListener('keydown', onFirstInteraction, { once: true });
-      window.addEventListener('touchstart', onFirstInteraction, { once: true, passive: true });
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && !isPlaying) {
-          playCurrent();
-        }
-      });
-    })();
+    
+    // SUPPRESSION DE LA LOGIQUE D'AUTOPLAY COMPLEXE ET CONFLICTUELLE
+    // Le lancement de la musique se fait maintenant UNIQUEMENT via l'écouteur du bouton "Démarrer la partie"
 
     // Dynamic board tilt and shifting highlights following cursor
     let rafId = null;
@@ -527,7 +524,7 @@
         gameScreen.style.transform = 'scale(1)';
       });
       
-      // Initialiser le jeu
+      // Initialiser l'état du jeu après la transition
       initGame();
     }, 800);
   }
@@ -542,25 +539,24 @@
   }
 
   function init() {
-    // Gérer le bouton de démarrage
-    if (startGameBtn) {
-      startGameBtn.addEventListener('click', showGame);
-    }
+    // La gestion du bouton de démarrage est faite au début du script.
     
-    // Si pas de page d'accueil, initialiser directement le jeu
-    if (!welcomeScreen) {
+    // Si pas de page d'accueil (ou déjà en jeu), initialiser directement le jeu
+    if (!welcomeScreen || !startGameBtn) {
       initGame();
     }
   }
 
   // Particle helpers
   function spawnParticlesFromElement(el) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const rect = el.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
     const y = rect.top + rect.height / 2;
     for (let i = 0; i < 10; i++) spawnParticle(x, y);
   }
   function spawnParticlesAtCell(index) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const cell = cells[index];
     const rect = cell.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
@@ -568,7 +564,6 @@
     for (let i = 0; i < 12; i++) spawnParticle(x, y);
   }
   function spawnParticle(x, y) {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const p = document.createElement('div');
     p.className = 'particle';
     p.style.left = `${x}px`;
@@ -591,7 +586,7 @@
   let gameMode = 'pvp'; // 'pvp', 'ai-easy', 'ai-expert'
   const aiPlayer = 'O';
   const humanPlayer = 'X';
-  const MAX_DEPTH = 5; // Limite de profondeur pour le mode facile
+  const MAX_DEPTH = 4; // Limite de profondeur pour le mode facile (réduit à 4 pour la vitesse)
 
   function getLegalMoves(currentBoard, player) {
     const moves = [];
@@ -624,10 +619,16 @@
   function getScore(currentBoard) {
     const result = getWinner(currentBoard);
     if (result) {
-      return result.player === aiPlayer ? 100 : -100;
+      // Score plus élevé pour une victoire en phase de mouvement que de placement
+      const winScore = (phase === 'placement') ? 100 : 1000;
+      return result.player === aiPlayer ? winScore : -winScore;
     }
-    // Pas de match nul pour l'instant car le plateau peut se vider
-    return 0;
+    // Heuristique simple: nombre de jetons du joueur
+    const aiCount = currentBoard.filter(c => c === aiPlayer).length;
+    const humanCount = currentBoard.filter(c => c === humanPlayer).length;
+    
+    // Si la partie est longue (phase de mouvement), favoriser la présence sur le plateau
+    return (phase === 'movement' ? (aiCount - humanCount) * 10 : 0);
   }
 
   function applyMove(currentBoard, move, player) {
@@ -639,6 +640,11 @@
       newBoard[move.from] = '';
     }
     return newBoard;
+  }
+  
+  // Fonction utilitaire pour simuler la phase suivante SANS modifier les compteurs globaux
+  function getSimulatedPhase(currentTokensPlaced) {
+      return (currentTokensPlaced[aiPlayer] === tokensMax && currentTokensPlaced[humanPlayer] === tokensMax) ? 'movement' : 'placement';
   }
 
   function minimax(currentBoard, depth, isMaximizing, currentTokensPlaced, maxDepth) {
@@ -660,28 +666,26 @@
       let bestScore = -Infinity;
       for (const move of moves) {
         const newBoard = applyMove(currentBoard, move, player);
-        // Simuler le passage en phase de mouvement si on est à la fin du placement
         const newTokensPlaced = {...currentTokensPlaced};
         if (move.type === 'place') newTokensPlaced[player] += 1;
         
-        const nextPhase = (newTokensPlaced[aiPlayer] === tokensMax && newTokensPlaced[humanPlayer] === tokensMax) ? 'movement' : 'placement';
+        const nextPhase = getSimulatedPhase(newTokensPlaced);
         
-        // La récursivité doit simuler le reste de la partie, mais sans les compteurs globaux pour le placement
-        // Pour Minimax, on ne se soucie pas des compteurs après la phase de placement.
+        // Simuler la profondeur: on incrémente que si on est en phase de mouvement ou si on est toujours en phase de placement
         const simulatedDepth = (nextPhase === 'placement' && depth < tokensMax * 2 - 1) ? depth + 1 : depth;
 
         const value = minimax(newBoard, simulatedDepth, false, newTokensPlaced, maxDepth);
         bestScore = Math.max(bestScore, value);
       }
       return bestScore;
-    } else {
+    } else { // Minimizing
       let bestScore = Infinity;
       for (const move of moves) {
         const newBoard = applyMove(currentBoard, move, player);
         const newTokensPlaced = {...currentTokensPlaced};
         if (move.type === 'place') newTokensPlaced[player] += 1;
 
-        const nextPhase = (newTokensPlaced[aiPlayer] === tokensMax && newTokensPlaced[humanPlayer] === tokensMax) ? 'movement' : 'placement';
+        const nextPhase = getSimulatedPhase(newTokensPlaced);
         const simulatedDepth = (nextPhase === 'placement' && depth < tokensMax * 2 - 1) ? depth + 1 : depth;
         
         const value = minimax(newBoard, simulatedDepth, true, newTokensPlaced, maxDepth);
@@ -715,6 +719,7 @@
       const newTokensPlaced = {...tokensPlaced};
       if (move.type === 'place') newTokensPlaced[aiPlayer] += 1;
       
+      // L'appel initial est toujours à la profondeur 0
       const score = minimax(newBoard, 0, false, newTokensPlaced, maxDepth);
 
       if (score > bestScore) {
@@ -742,9 +747,10 @@
         if (success) {
           const placedPiece = cells[move.index].querySelector('.piece');
           if (placedPiece) {
+            // Animation de placement pour l'IA
             placedPiece.animate([
-              { transform: 'translateZ(-40px) scale(0.3)', opacity: 0 },
-              { transform: 'translateZ(0) scale(1)', opacity: 1 }
+              { transform: 'translateZ(-40px) rotateX(-10deg) rotateY(8deg) scale(0.3)', opacity: 0 },
+              { transform: 'translateZ(0) rotateX(0) rotateY(0) scale(1)', opacity: 1 }
             ], { duration: 200, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)' });
           }
         }
@@ -775,5 +781,3 @@
     init();
   }
 })();
-
-
